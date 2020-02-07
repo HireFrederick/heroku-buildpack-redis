@@ -11,7 +11,10 @@ This buildpack contains only small changes from the base [Heroku Redis Buildpack
 
 ## Usage
 
-First you need to set this buildpack as your initial buildpack with:
+First, ensure your Heroku Redis addon is using a production tier plan. SSL is not
+available when using the hobby tier.
+
+Then set this buildpack as your initial buildpack with:
 
 ```console
 $ heroku buildpacks:add -i 1 https://github.com/hmdc/heroku-buildpack-redis-cloud.git
@@ -47,7 +50,7 @@ used when configuring the redis instance for SSL
 - ``STUNNEL_KEY``: Paste in the private key for the client certificate. If you had Redis Cloud generate your cert, this key is in the zip file.
 - ``STUNNEL_CA``: Paste in the certificate CA. If you had Redis Cloud generate the cert, this is also in the zip file provided.
 - ``STUNNEL_ENABLED``: Defaults to `true`, set to `false` to disable stunnel.
-- ``STUNNEL_FORCE_TLS``: Default is unset. Set this var, to force TLSv1 on cedar-10.
+- ``STUNNEL_LOGLEVEL``: Default is `notice`, set to `info` or `debug` for more verbose log output.
 - ``REDIS_STUNNEL_URLS``: Use this to specify for which Redis URLs (environment variables) to activate the SSL tunnel.
 For instance, ``$ heroku config:add REDIS_STUNNEL_URLS="CACHE_URL SESSION_STORE_URL"`` to specify two redis instances
 with URLS set to `CACHE_URL` and `SESSION_STORE_URL` vars.
@@ -61,7 +64,7 @@ your `Procfile` with `bin/start-stunnel`.
 
     $ cat Procfile
     web:    bin/start-stunnel bundle exec unicorn -p $PORT -c ./config/unicorn.rb -E $RACK_ENV
-    worker: bin/start-stunnel bundle exec sidekiq
+    worker: bundle exec rake worker
 
 We're then ready to deploy to Heroku with an encrypted connection between the dynos and Redis:
 

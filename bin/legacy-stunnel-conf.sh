@@ -1,22 +1,17 @@
 #!/usr/bin/env bash
-URLS=${REDIS_STUNNEL_URLS:-REDIS_CLOUD_URL}
+URLS=${REDIS_STUNNEL_URLS:-REDIS_URL `compgen -v HEROKU_REDIS`}
 n=1
 
 mkdir -p /app/vendor/stunnel/var/run/stunnel/
-echo "$STUNNEL_CERT" > /app/vendor/stunnel/stunnel.crt
-echo "$STUNNEL_KEY" > /app/vendor/stunnel/stunnel.key
-echo "$STUNNEL_CA" > /app/vendor/stunnel/stunnel_ca.crt
+
 cat > /app/vendor/stunnel/stunnel.conf << EOFEOF
 foreground = yes
 
 pid = /app/vendor/stunnel/stunnel4.pid
 
-cert = /app/vendor/stunnel/stunnel.crt
-key = /app/vendor/stunnel/stunnel.key
-cafile = /app/vendor/stunnel/stunnel_ca.crt
-verify = 2
-delay = yes
-
+options = NO_SSLv2
+options = SINGLE_ECDH_USE
+options = SINGLE_DH_USE
 socket = r:TCP_NODELAY=1
 options = NO_SSLv3
 TIMEOUTidle = 86400
@@ -34,6 +29,7 @@ do
   URI_PASS=${URI[2]}
   URI_HOST=${URI[3]}
   URI_PORT=${URI[4]}
+  STUNNEL_PORT=$((URI_PORT + 1))
 
   echo "Setting ${URL}_STUNNEL config var"
   export ${URL}_STUNNEL=$URI_SCHEME://$URI_USER:$URI_PASS@127.0.0.1:637${n}
@@ -42,7 +38,7 @@ do
 [$URL]
 client = yes
 accept = 127.0.0.1:637${n}
-connect = $URI_HOST:$URI_PORT
+connect = $URI_HOST:$STUNNEL_PORT
 retry = ${STUNNEL_CONNECTION_RETRY:-"no"}
 EOFEOF
 
